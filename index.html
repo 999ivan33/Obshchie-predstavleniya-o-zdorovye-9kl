@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ОБЗР: Общие представления о здоровье</title>
+  <style>
+    /* =========================================================
+       1. СБРОС И ЗАЩИТА ОТ ВЫДЕЛЕНИЯ / КОПИРОВАНИЯ
+       ========================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+    }
+
+    body {
+      background-color: #070a12;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+      overflow-x: hidden;
+      touch-action: pan-y;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 50% 5%, rgba(14, 165, 233, 0.12), transparent 55%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 28px 28px, 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================
+       2. ИНТЕРФЕЙСНЫЙ КАРКАС
+       ========================================================= */
+    .app-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+      background: #0d121f;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .badge-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(14, 165, 233, 0.15);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(14, 165, 233, 0.35);
+    }
+
+    .counter-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: #172033;
+      border-radius: 99px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      transition: width 0.25s ease;
+    }
+
+    /* =========================================================
+       3. STEP-BY-STEP АККОРДЕОН (ПОШАГОВОЕ ПЕРЕКРЫТИЕ)
+       ========================================================= */
+    .accordion-step-box {
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .step-section {
+      display: none;
+      animation: fadeIn 0.15s ease forwards;
+    }
+
+    .step-section.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .phase-badge {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .question-heading {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #f8fafc;
+      background: #131a2b;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      margin-bottom: 16px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .option-item {
+      background: #131a2b;
+      border: 1px solid #1e293b;
+      border-radius: 9px;
+      padding: 13px 14px;
+      font-size: 13.5px;
+      line-height: 1.35;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.12s ease, border-color 0.12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .option-item:active, .option-item.tapped {
+      background: #0284c7 !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+    }
+
+    .option-letter {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+
+    .btn-step {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 9px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-step:active {
+      background: #0369a1;
+    }
+
+    .btn-step-back {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* =========================================================
+       4. ОВЕРЛЕЙ БЛОКИРОВКИ ЭКРАНА
+       ========================================================= */
+    #blackout-shield {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 999999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .blackout-icon { font-size: 46px; margin-bottom: 12px; }
+    .blackout-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ef4444;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .blackout-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.45;
+      max-width: 380px;
+    }
+
+    /* =========================================================
+       5. РЕЗУЛЬТАТЫ
+       ========================================================= */
+    .screen-view { display: none; }
+    .screen-view.current { display: block; }
+
+    .result-content { text-align: center; padding: 12px 4px; }
+
+    .mark-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 800;
+      border: 3px solid;
+    }
+
+    .mark-5 { color: #4ade80; border-color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+    .mark-4 { color: #60a5fa; border-color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+    .mark-3 { color: #facc15; border-color: #facc15; background: rgba(250, 204, 21, 0.12); }
+    .mark-2 { color: #f87171; border-color: #f87171; background: rgba(248, 113, 113, 0.12); }
+
+    .score-title { font-size: 18px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+    .score-percent { font-size: 13px; color: #94a3b8; margin-bottom: 14px; }
+
+    .analysis-card {
+      background: #131a2b;
+      border: 1px solid #1e293b;
+      border-radius: 9px;
+      padding: 13px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .action-btn {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="blackout-shield">
+  <div class="blackout-icon">🛡️</div>
+  <div class="blackout-title">Фиксация экрана запрещена!</div>
+  <div class="blackout-desc">
+    Обнаружена попытка создания скриншота, свайп шторки или переключение окна.<br><br>
+    <strong>Текущий вопрос аннулирован (0 баллов).</strong><br>
+    Выполняется переход к следующему заданию...
+  </div>
+</div>
+
+<div class="app-card">
+
+  <div id="test-screen" class="screen-view current">
+    <div class="top-meta">
+      <span class="badge-label">🔋 ОБЗР • 9 КЛАСС</span>
+      <span id="q-counter" class="counter-text">Вопрос 1 из 20</span>
+    </div>
+
+    <div class="progress-bar-bg">
+      <div id="p-bar" class="progress-bar-fill"></div>
+    </div>
+
+    <div class="accordion-step-box">
+      <!-- ЭТАП 1: ТОЛЬКО ВОПРОС -->
+      <div id="step-question" class="step-section active">
+        <div class="phase-badge">Шаг 1 из 2 • Изучите условие</div>
+        <h2 id="q-text" class="question-heading">Загрузка задания...</h2>
+        <button id="btn-to-options" class="btn-step" type="button">
+          <span>Перейти к вариантам ответов</span> ➔
+        </button>
+      </div>
+
+      <!-- ЭТАП 2: ТОЛЬКО ОТВЕТЫ -->
+      <div id="step-options" class="step-section">
+        <div class="phase-badge">Шаг 2 из 2 • Выберите вариант</div>
+        <div id="options-box" class="options-list"></div>
+        <button id="btn-back-to-q" class="btn-step-back" type="button">
+          ⬅ Вернуться к чтению вопроса
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result-screen" class="screen-view">
+    <div class="result-content">
+      <div id="mark-circle" class="mark-circle">5</div>
+      <div id="score-text" class="score-title">20 из 20 верно</div>
+      <div id="percent-text" class="score-percent">100% правильных ответов</div>
+
+      <div class="analysis-card">
+        <strong>Аналитическое заключение:</strong>
+        <p id="analysis-text" style="margin-top: 5px;"></p>
+      </div>
+
+      <button class="action-btn" onclick="location.reload()">Пройти еще раз</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   БАНК ИЗ 40 ВОПРОСОВ ПО ТЕМЕ «ЗДОРОВЬЕ» (9 КЛАСС)
+   ========================================================= */
+const questionBank = [
+  {
+    q: "Какое ключевое положение закреплено в официальном определении здоровья ВОЗ?",
+    a: ["Состояние полного комплексного благополучия", "Отсутствие подтвержденных медицинских справок", "Хорошая физическая мышечная форма", "Способность переносить высокие нагрузки"],
+    correct: "Состояние полного комплексного благополучия"
+  },
+  {
+    q: "Какой компонент здоровья образно называют «Hardware / Железо» биокомпьютера?",
+    a: ["Физический уровень функционирования систем", "Психический уровень эмоциональной устойчивости", "Социальный уровень межличностного общения", "Духовный уровень базовых ценностей"],
+    correct: "Физический уровень функционирования систем"
+  },
+  {
+    q: "Что относится к психическому уровню здоровья согласно конспекту?",
+    a: ["Ясность мышления и хладнокровие", "Высокие силовые показатели мышц", "Правильное питание качественными продуктами", "Наличие широкого круга знакомых"],
+    correct: "Ясность мышления и хладнокровие"
+  },
+  {
+    q: "За какую функцию отвечает социальный уровень здоровья человека?",
+    a: ["Грамотное выстраивание здоровых связей", "Ночное очищение спинномозговой жидкости", "Удержание правильной спортивной осанки", "Синтез белка для мышечной ткани"],
+    correct: "Грамотное выстраивание здоровых связей"
+  },
+  {
+    q: "Какую роль в системе здоровья играет духовный уровень личности?",
+    a: ["Формирует ориентиры, смыслы, ценности", "Обеспечивает усвоение сложных углеводов", "Регулирует частоту пульса сердца", "Ускоряет передачу нервных импульсов"],
+    correct: "Формирует ориентиры, смыслы, ценности"
+  },
+  {
+    q: "Какую долю влияния на здоровье составляет индивидуальный образ жизни человека?",
+    a: ["От 50 до 55 процентов", "Строго около 20 процентов", "Не более 10 процентов", "Около 80 процентов суммы"],
+    correct: "От 50 до 55 процентов"
+  },
+  {
+    q: "Какой вклад в формирование здоровья вносит генетическая наследственность?",
+    a: ["Примерно 20 процентов влияния", "Более 50 процентов факторов", "Всего 5 процентов роли", "Не превышает 2 процентов"],
+    correct: "Примерно 20 процентов влияния"
+  },
+  {
+    q: "Какова реальная доля системы здравоохранения (медицины) в сохранении здоровья?",
+    a: ["От 8 до 10 процентов", "От 40 до 50 процентов", "Около 30 процентов вклада", "Менее одного процента доли"],
+    correct: "От 8 до 10 процентов"
+  },
+  {
+    q: "Почему медицину образно называют «службой экстренного ремонта» организма?",
+    a: ["Устраняет последствия возникших поломок", "Создает ежедневный внутренний ресурс", "Полностью заменяет здоровые привычки", "Формирует социальные ориентиры человека"],
+    correct: "Устраняет последствия возникших поломок"
+  },
+  {
+    q: "Какая система головного мозга активно очищает его от токсинов во сне?",
+    a: ["Глимфатическая система спинномозговой жидкости", "Лимбическая система эмоционального фона", "Вегетативная симпатическая нервная цепь", "Периферическая двигательная сетка волокон"],
+    correct: "Глимфатическая система спинномозговой жидкости"
+  },
+  {
+    q: "Какой гормон вырабатывается ночью в темноте и регулирует биоритмы?",
+    a: ["Гормон сна и восстановления мелатонин", "Гормон стресса и тревоги кортизол", "Гормон быстрого действия адреналин", "Гормон поджелудочной железы инсулин"],
+    correct: "Гормон сна и восстановления мелатонин"
+  },
+  {
+    q: "За сколько минут до отхода ко сну рекомендуется отключать яркие экраны гаджетов?",
+    a: ["За 40–60 минут до сна", "За 5–10 минут до сна", "Не менее трех часов подряд", "Экраны не влияют на биоритмы"],
+    correct: "За 40–60 минут до сна"
+  },
+  {
+    q: "Какой белок вырабатывается при физической активности и стимулирует рост нейронов?",
+    a: ["Нейротрофический фактор мозга BDNF", "Гормон щитовидной железы тироксин", "Транспортный белок крови гемоглобин", "Пищеварительный фермент желудка пепсин"],
+    correct: "Нейротрофический фактор мозга BDNF"
+  },
+  {
+    q: "Какая минимальная ежедневная норма физической активности рекомендована подросткам?",
+    a: ["Не менее 60 минут активности", "Не более 15 минут зарядки", "Строго три часа тренировок", "Один раз в календарную неделю"],
+    correct: "Не менее 60 минут активности"
+  },
+  {
+    q: "К какому негативному эффекту приводит избыточное употребление простых сахаров?",
+    a: ["Резкие инсулиновые качели настроения", "Усиление ночной выработки мелатонина", "Повышение плотности костной ткани", "Улучшение долгосрочной концентрации внимания"],
+    correct: "Резкие инсулиновые качели настроения"
+  },
+  {
+    q: "Какой гормон вырабатывается надпочечниками при затяжном эмоциональном стрессе?",
+    a: ["Гормон стрессовой реакции кортизол", "Гормон роста тела соматотропин", "Гормон крепкого сна мелатонин", "Гормон углеводного обмена инсулин"],
+    correct: "Гормон стрессовой реакции кортизол"
+  },
+  {
+    q: "Какое физиологическое дыхательное упражнение помогает быстро снять стресс?",
+    a: ["Дыхание по равному квадрату 4×4", "Максимально быстрое поверхностное дыхание", "Длительная задержка воздуха на вдохе", "Прерывистое дыхание через одну ноздрю"],
+    correct: "Дыхание по равному квадрату 4×4"
+  },
+  {
+    q: "Почему никотин, вейпы и энергетики образно называют «кредитом под грабительский процент»?",
+    a: ["Отбирают силы у завтрашнего дня", "Улучшают работу глимфатической системы", "Полностью восстанавливают запас гликогена", "Увеличивают естественный синтез дофамина"],
+    correct: "Отбирают силы у завтрашнего дня"
+  },
+  {
+    q: "Сколько секторов включает в себя экспресс-диагностика «Колесо баланса здоровья»?",
+    a: ["Четыре ключевых базовых сектора", "Два основных противоположных полюса", "Десять равных мелких сегментов", "Шесть специализированных блоков тела"],
+    correct: "Четыре ключевых базовых сектора"
+  },
+  {
+    q: "Какое высказывание выражает суть ЗОЖ согласно материалу конспекта?",
+    a: ["Способ постоянного энергичного движения", "Набор суровых медицинских запретов", "Подготовка к сдаче нормативов", "Случайное везение крепких генов"],
+    correct: "Способ постоянного энергичного движения"
+  },
+  {
+    q: "Какой фактор среды занимает около 20% в формуле здоровья академика Лисицына?",
+    a: ["Экологическая обстановка и климат", "Количество больниц в районе проживания", "Генетический код родителей человека", "Личный распорядок каждого дня"],
+    correct: "Экологическая обстановка и климат"
+  },
+  {
+    q: "Какую пищу относят к категории «чистого топлива» для мышц и нервной системы?",
+    a: ["Сложные крупы, овощи, белок", "Сладкие газированные цветные напитки", "Жирные кондитерские изделия фабрик", "Фастфуд с высоким содержанием соли"],
+    correct: "Сложные крупы, овощи, белок"
+  },
+  {
+    q: "Какой гормон отвечает за рост, клеточную регенерацию и активен ночью?",
+    a: ["Гормон роста соматотропный гормон", "Гормон страха быстрый адреналин", "Гормон поджелудочной железы глюкагон", "Пигментный гормон сетчатки мелатонин"],
+    correct: "Гормон роста соматотропный гормон"
+  },
+  {
+    q: "Что происходит с нейронами мозга при регулярных аэробных тренировках?",
+    a: ["Стимулируется формирование новых связей", "Разрушается внешняя миелиновая оболочка", "Замедляется передача нервных импульсов", "Блокируется поступление молекул кислорода"],
+    correct: "Стимулируется формирование новых связей"
+  },
+  {
+    q: "Какое действие помогает вернуть фокус при появлении чувства «мозгового тумана»?",
+    a: ["Выпить стакан чистой воды", "Съесть две плитки шоколада", "Принять обезболивающую аптечную таблетку", "Непрерывно листать ленту новостей"],
+    correct: "Выпить стакан чистой воды"
+  },
+  {
+    q: "Что лежит в основе социального здоровья школьника?",
+    a: ["Умение экологично говорить «нет»", "Отказ от любого общения вокруг", "Стремление нравиться каждому человеку", "Постоянные споры со сверстниками"],
+    correct: "Умение экологично говорить «нет»"
+  },
+  {
+    q: "Какая продолжительность ночного сна физиологически необходима девятикласснику?",
+    a: ["От 7 до 9 часов", "Не более 5 часов", "Около 12–14 часов", "Ровно 4 часа отдыха"],
+    correct: "От 7 до 9 часов"
+  },
+  {
+    q: "Какое влияние оказывает синий свет экранов смартфонов на эпифиз перед сном?",
+    a: ["Блокирует синтез гормона мелатонина", "Ускоряет погружение в глубокий сон", "Активизирует ночное мышечное восстановление", "Увеличивает концентрацию полезного озона"],
+    correct: "Блокирует синтез гормона мелатонина"
+  },
+  {
+    q: "Что характерно для хронически повышенного уровня гормона кортизола?",
+    a: ["Угнетение иммунитета и ухудшение памяти", "Повышение выносливости и спокойствия", "Укрепление структуры сердечной мышцы", "Снижение жировой прослойки тела"],
+    correct: "Угнетение иммунитета и ухудшение памяти"
+  },
+  {
+    q: "Как переводится образная аналогия «Network / Сеть» в концепции здоровья?",
+    a: ["Социальное взаимодействие в социуме", "Мышечная система всего тела", "Иммунные клетки лимфатических узлов", "Процессы долговременного логического мышления"],
+    correct: "Социальное взаимодействие в социуме"
+  },
+  {
+    q: "Какой компонент конспекта отвечает на вопрос: «Ради чего я просыпаюсь утром?»",
+    a: ["Духовный уровень жизненных ориентиров", "Физический уровень мышечной силы", "Психический уровень быстрой реакции", "Экологический фактор внешней среды"],
+    correct: "Духовный уровень жизненных ориентиров"
+  },
+  {
+    q: "Какое из перечисленных действий относится к понятию психогигиены?",
+    a: ["Регулярный осознанный цифровой детокс", "Ежедневный прием антибиотиков натощак", "Интенсивный бег без отдыха", "Употребление синтетических энергетических смесей"],
+    correct: "Регулярный осознанный цифровой детокс"
+  },
+  {
+    q: "Почему надеяться только на систему здравоохранения ошибочно?",
+    a: ["Она дает лишь десять процентов", "Врачи не лечат острые травмы", "Лекарства не действуют на организм", "Медицина создана для спортсменов"],
+    correct: "Она дает лишь десять процентов"
+  },
+  {
+    q: "Какая функция возложена на клетчатку в структуре правильного питания?",
+    a: ["Поддержание здоровой микрофлоры кишечника", "Мгновенное повышение уровня инсулина", "Синтез стрессовых гормонов надпочечников", "Замедление очищения внутренних органов"],
+    correct: "Поддержание здоровой микрофлоры кишечника"
+  },
+  {
+    q: "Что происходит в организме при замене регулярного сна энергетическими напитками?",
+    a: ["Истощение запасов нервной системы", "Стимуляция естественного синтеза белка", "Улучшение работы сердечных клапанов", "Увеличение продолжительности глубокого сна"],
+    correct: "Истощение запасов нервной системы"
+  },
+  {
+    q: "Какое физическое ощущение сигнализирует о высоком уровне психического здоровья?",
+    a: ["Уверенное хладнокровие при трудностях", "Постоянная агрессивная мышечная дрожь", "Полное безразличие к любым событиям", "Резкое повышение артериального давления"],
+    correct: "Уверенное хладнокровие при трудностях"
+  },
+  {
+    q: "Какая задача решается при выполнении практики «Колесо баланса»?",
+    a: ["Точная самодиагностика дефицитов ресурса", "Определение рекордов по бегу", "Выбор будущей узкой профессии", "Расчет суточного объема калорий"],
+    correct: "Точная самодиагностика дефицитов ресурса"
+  },
+  {
+    q: "Какая группа жиров жизненно необходима для клеток головного мозга?",
+    a: ["Омега-3 полиненасыщенные жирные кислоты", "Трансжиры кондитерских глазированных плиток", "Технический гидрогенизированный твердый маргарин", "Перегретое кулинарное фритюрное масло"],
+    correct: "Омега-3 полиненасыщенные жирные кислоты"
+  },
+  {
+    q: "Что из перечисленного является признаком суверенитета личности подростка?",
+    a: ["Устойчивость к манипуляциям рекламы", "Копирование поведения любой компании", "Употребление модных ароматизированных смесей", "Игнорирование правил личной гигиены"],
+    correct: "Устойчивость к манипуляциям рекламы"
+  },
+  {
+    q: "Какое ключевое правило закрепляет финальный якорь конспекта?",
+    a: ["Каждый выбор заряжает или разряжает", "Здоровье зависит исключительно от генов", "Главное — не иметь записей врача", "Физическая сила важнее интеллекта"],
+    correct: "Каждый выбор заряжает или разряжает"
+  }
+];
+
+/* =========================================================
+   РАНДОМИЗАЦИЯ И СЕССИЯ (20 ИЗ 40)
+   ========================================================= */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const sessionQuestions = shuffle(questionBank).slice(0, 20).map(item => {
+  const shuffledOptions = shuffle(item.a);
+  return {
+    q: item.q,
+    options: shuffledOptions,
+    correctIdx: shuffledOptions.indexOf(item.correct)
+  };
+});
+
+/* =========================================================
+   СОСТОЯНИЕ И ЛОГИКА АККОРДЕОНА
+   ========================================================= */
+let currentStep = 0;
+let score = 0;
+let isQuizFinished = false;
+let questionBurned = false;
+let isAnswering = false;
+
+const testScreen = document.getElementById("test-screen");
+const resultScreen = document.getElementById("result-screen");
+const blackoutShield = document.getElementById("blackout-shield");
+
+const qCounter = document.getElementById("q-counter");
+const pBar = document.getElementById("p-bar");
+const qText = document.getElementById("q-text");
+const optionsBox = document.getElementById("options-box");
+
+const stepQuestion = document.getElementById("step-question");
+const stepOptions = document.getElementById("step-options");
+const btnToOptions = document.getElementById("btn-to-options");
+const btnBackToQ = document.getElementById("btn-back-to-q");
+
+// Шаг 1 -> Шаг 2 (скрываем вопрос, открываем варианты)
+btnToOptions.addEventListener("click", () => {
+  if (isQuizFinished || questionBurned) return;
+  stepQuestion.classList.remove("active");
+  stepOptions.classList.add("active");
+});
+
+// Шаг 2 -> Шаг 1 (возврат к вопросу)
+btnBackToQ.addEventListener("click", () => {
+  if (isQuizFinished || questionBurned) return;
+  stepOptions.classList.remove("active");
+  stepQuestion.classList.add("active");
+});
+
+function loadQuestion() {
+  isAnswering = false;
+
+  // Всегда начинаем показ с Шага 1
+  stepOptions.classList.remove("active");
+  stepQuestion.classList.add("active");
+
+  const data = sessionQuestions[currentStep];
+  qCounter.textContent = `Вопрос ${currentStep + 1} из 20`;
+  pBar.style.width = `${(currentStep / 20) * 100}%`;
+  qText.textContent = data.q;
+
+  optionsBox.innerHTML = "";
+  const letters = ["А", "Б", "В", "Г"];
+
+  data.options.forEach((optText, index) => {
+    const card = document.createElement("div");
+    card.className = "option-item";
+    card.innerHTML = `
+      <div class="option-letter">${letters[index]}</div>
+      <div>${optText}</div>
+    `;
+
+    card.addEventListener("click", () => {
+      if (isAnswering || isQuizFinished || questionBurned) return;
+      isAnswering = true;
+      card.classList.add("tapped");
+      setTimeout(() => pickAnswer(index), 90);
+    });
+
+    optionsBox.appendChild(card);
+  });
+}
+
+function pickAnswer(index) {
+  if (isQuizFinished || questionBurned) return;
+
+  const data = sessionQuestions[currentStep];
+  if (index === data.correctIdx) {
+    score++;
+  }
+
+  nextStep();
+}
+
+function nextStep() {
+  currentStep++;
+  if (currentStep < 20) {
+    loadQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+/* =========================================================
+   БЛЭКАУТ ПРИ СКРИНШОТЕ / ПОТЕРЕ ФОКУСА (BURN QUESTION)
+   ========================================================= */
+let isAppReady = false;
+// Задержка 1500 мс для исключения ложных срабатываний в QR-сканерах
+setTimeout(() => { isAppReady = true; }, 1500);
+
+function triggerBlackout() {
+  if (!isAppReady || isQuizFinished || questionBurned) return;
+
+  questionBurned = true;
+  blackoutShield.style.display = "flex";
+  qText.textContent = "";
+  optionsBox.innerHTML = "";
+}
+
+function handleFocusReturn() {
+  if (!questionBurned) return;
+
+  setTimeout(() => {
+    blackoutShield.style.display = "none";
+    questionBurned = false;
+    nextStep();
+  }, 1800);
+}
+
+window.addEventListener("blur", triggerBlackout);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) triggerBlackout();
+});
+window.addEventListener("focus", handleFocusReturn);
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === "PrintScreen") {
+    triggerBlackout();
+    handleFocusReturn();
+  }
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "PrintScreen") {
+    e.preventDefault();
+    triggerBlackout();
+    handleFocusReturn();
+  }
+  if (
+    e.key === "F12" ||
+    ((e.ctrlKey || e.metaKey) && ["c", "u", "s", "p", "a"].includes(e.key.toLowerCase())) ||
+    ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+document.addEventListener("dragstart", (e) => e.preventDefault());
+
+/* =========================================================
+   ШКАЛА ОЦЕНИВАНИЯ:
+   0–5 верных = 2 (неудовлетворительно)
+   6–11 верных = 3 (удовлетворительно)
+   12–16 верных = 4 (хорошо, от 12 вопросов)
+   17–20 верных = 5 (отлично)
+   ========================================================= */
+function finishQuiz() {
+  isQuizFinished = true;
+  testScreen.classList.remove("current");
+  resultScreen.classList.add("current");
+
+  const pct = Math.round((score / 20) * 100);
+  document.getElementById("score-text").textContent = `${score} из 20 верно`;
+  document.getElementById("percent-text").textContent = `${pct}% правильных ответов`;
+
+  const markCircle = document.getElementById("mark-circle");
+  const analysisText = document.getElementById("analysis-text");
+  markCircle.className = "mark-circle";
+
+  if (score >= 17) {
+    markCircle.classList.add("mark-5");
+    markCircle.textContent = "5";
+    analysisText.innerHTML = "<strong>Превосходный уровень компетентности!</strong> Вы глубоко понимаете системную модель здоровья, ориентируетесь в формуле факторов Лисицына, биоритмах сна и физиологии стресса. Отличная база для осознанного управления ресурсами тела.";
+  } else if (score >= 12) {
+    markCircle.classList.add("mark-4");
+    markCircle.textContent = "4";
+    analysisText.innerHTML = "<strong>Хороший качественный результат.</strong> Порог в 12 правильных ответов пройден уверенно. Базовые принципы 4 уровней здоровья и драйверов ЗОЖ усвоены надежно, за исключением пары терминологических тонкостей.";
+  } else if (score >= 6) {
+    markCircle.classList.add("mark-3");
+    markCircle.textContent = "3";
+    analysisText.innerHTML = "<strong>Удовлетворительно (базовый уровень).</strong> Основные ориентиры понятны, но допущены ошибки в соотношении факторов влияния и гормональных механизмах восстановления. Рекомендуется повторить ключевые пункты конспекта.";
+  } else {
+    markCircle.classList.add("mark-2");
+    markCircle.textContent = "2";
+    analysisText.innerHTML = "<strong>Порог не пройден (5 и менее правильных ответов).</strong> Зафиксировано критическое количество ошибок либо часть заданий сгорела при попытке фиксации экрана. Требуется внимательное повторное изучение материала.";
+  }
+}
+
+// Старт первого вопроса
+loadQuestion();
+</script>
+</body>
+</html>
